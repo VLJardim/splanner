@@ -21,8 +21,8 @@ export default function AuthModal({ open, onClose }: Props) {
       .eq("id", user.id)
       .single();
     onClose();
-    if (profile?.role === "teacher") window.location.href = "/(teacher)/dashboard";
-    else window.location.href = "/(student)/page";
+    if (profile?.role === "teacher") window.location.href = "/dashboard";
+    else window.location.href = "/student-home/page";
   }
 
   async function submit() {
