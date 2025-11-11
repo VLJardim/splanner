@@ -1,4 +1,8 @@
 // Mine sessions (dummy – udskift med listMine når auth er på plads)
+import React from "react";
+import "../../globals.css";
+
+
 export default async function DashboardHome() {
   return (
     <div className="space-y-3">

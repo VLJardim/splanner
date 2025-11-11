@@ -5,8 +5,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className="border rounded p-4">
         <div className="font-semibold mb-2">Lærer</div>
         <nav className="grid gap-2 text-sm">
-          <a href="/(teacher)/dashboard">Mine sessions</a>
-          <a href="/(teacher)/dashboard/new">Ny session</a>
+          <a href="/dashboard">Mine sessions</a>
+          <a href="/dashboard/new">Ny session</a>
         </nav>
       </aside>
       <section>{children}</section>
