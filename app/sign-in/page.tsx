@@ -1,12 +1,4 @@
-export default function TeacherRoute () {
-    return(
-        <div>
-            <p>you're a teacher, good luck!</p>
-        </div>
-
-    );
-
-}// Simpel sign-in placeholder
+// Simpel sign-in placeholder
 export default function SignInPage() {
   return (
     <div className="space-y-3">
