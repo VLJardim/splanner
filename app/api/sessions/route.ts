@@ -1,65 +1,48 @@
+// app/api/sessions/route.ts
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/src/lib/supabaseServer";
+import { createClient } from "@supabase/supabase-js";
+
+function sbFromRequest(req: Request) {
+  const raw = req.headers.get("authorization") || "";
+  const token = raw.replace(/^Bearer\s+/i, "");
+
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: token ? { headers: { Authorization: `Bearer ${token}` } } : {},
+    }
+  );
+}
 
 // GET /api/sessions
-export async function GET() {
-  // optional arg; just await the factory
-  const sb = await supabaseServer();
-const {
-  data: { user },
-} = await sb.auth.getUser();
-console.log("API /sessions user:", user?.id, user?.email);
+export async function GET(req: Request) {
+  const sb = sbFromRequest(req);
 
   const { data, error } = await sb
     .from("sessions")
     .select("*")
     .order("starts_at", { ascending: true });
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
-  }
-  return NextResponse.json({ items: data ?? [] });
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ items: data });
 }
 
 // POST /api/sessions
 export async function POST(req: Request) {
-  const sb = await supabaseServer();
+  const sb = sbFromRequest(req);
 
-  // who’s calling? required for RLS + owner
-  const {
-    data: { user },
-  } = await sb.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Require auth
+  const { data: authRes } = await sb.auth.getUser();
+  if (!authRes.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
+  // TODO: validate body shape here
 
-  // minimal validation
-  const required = ["title", "starts_at", "delivery_mode", "slug"] as const;
-  for (const k of required) {
-    if (!body[k]) {
-      return NextResponse.json(
-        { error: `Missing field: ${k}` },
-        { status: 400 }
-      );
-    }
-  }
-
-  // server-controlled payload (don’t trust client for owner)
-  const payload = {
-    title: body.title,
-    description: body.description ?? null,
-    starts_at: body.starts_at, // UTC ISO string
-    ends_at: body.ends_at ?? null,
-    delivery_mode: body.delivery_mode, // 'online' | 'in_person'
-    meeting_url: body.meeting_url ?? null,
-    location: body.location ?? null,
-    slug: body.slug,
-    is_published: body.is_published ?? false,
-    owner: user.id,
-  };
+  // Ensure user_id on insert (either pass it from client or set here)
+  const payload = Array.isArray(body) ? body : [body];
+  payload.forEach((p) => (p.user_id ??= authRes.user!.id));
 
   const { data, error } = await sb
     .from("sessions")
@@ -67,9 +50,6 @@ export async function POST(req: Request) {
     .select()
     .single();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
-  }
-
-  return NextResponse.json({ item: data }, { status: 201 });
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json(data, { status: 201 });
 }
