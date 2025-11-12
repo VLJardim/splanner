@@ -1,4 +1,3 @@
-// app/api/sessions/route.ts
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -16,10 +15,9 @@ function sbFromRequest(req: Request) {
   );
 }
 
-// GET /api/sessions
+// ✅ GET: list sessions (optional)
 export async function GET(req: Request) {
   const sb = sbFromRequest(req);
-
   const { data, error } = await sb
     .from("sessions")
     .select("*")
@@ -29,27 +27,17 @@ export async function GET(req: Request) {
   return NextResponse.json({ items: data });
 }
 
-// POST /api/sessions
+// ✅ POST: create new session
 export async function POST(req: Request) {
   const sb = sbFromRequest(req);
-
-  // Require auth
   const { data: authRes } = await sb.auth.getUser();
   if (!authRes.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  // TODO: validate body shape here
+  const payload = { ...body, user_id: authRes.user.id }; // 👈 add user_id
 
-  // Ensure user_id on insert (either pass it from client or set here)
-  const payload = Array.isArray(body) ? body : [body];
-  payload.forEach((p) => (p.user_id ??= authRes.user!.id));
-
-  const { data, error } = await sb
-    .from("sessions")
-    .insert(payload)
-    .select()
-    .single();
-
+  const { data, error } = await sb.from("sessions").insert(payload).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
   return NextResponse.json(data, { status: 201 });
 }

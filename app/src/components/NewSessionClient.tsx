@@ -9,8 +9,8 @@ type Payload = {
   description: string;
   starts_at: string;              // UTC ISO
   delivery_mode: "online" | "in_person";
-  meeting_url?: string;
-  location?: string;
+  meeting_url?: string | null;    // allow nulls (DB-friendly)
+  location?: string | null;       // allow nulls (DB-friendly)
   slug: string;
 };
 
@@ -18,10 +18,22 @@ export default function NewSessionClient() {
   const router = useRouter();
 
   async function onSubmit(payload: Payload) {
-    const res = await authFetch("/api/sessions", { method: "POST", body: JSON.stringify(payload) });
+    // Ensure optional strings are either a real string or null
+    const cleaned = {
+      ...payload,
+      meeting_url: payload.meeting_url?.trim() ? payload.meeting_url.trim() : null,
+      location: payload.location?.trim() ? payload.location.trim() : null,
+    };
+
+    const res = await authFetch("/api/sessions", {
+      method: "POST",
+      body: JSON.stringify(cleaned),
+    });
+
+    let j: any = {};
+    try { j = await res.json(); } catch {}
 
     if (!res.ok) {
-      const j = await res.json().catch(() => ({}));
       alert(j.error ?? "Kunne ikke oprette session");
       return;
     }

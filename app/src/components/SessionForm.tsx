@@ -1,4 +1,3 @@
-// Meget simpel formular (MVP) – kan udvides senere
 "use client";
 
 import { useState } from "react";
@@ -11,8 +10,8 @@ type Props = {
     description: string;
     starts_at: string; // UTC
     delivery_mode: "online" | "in_person";
-    meeting_url?: string;
-    location?: string;
+    meeting_url?: string | null;
+    location?: string | null;
     slug: string;
   }) => Promise<void>;
 };
@@ -24,6 +23,26 @@ export default function SessionForm({ onSubmit }: Props) {
   const [mode, setMode] = useState<"online" | "in_person">("online");
   const [meetingUrl, setUrl] = useState("");
   const [location, setLocation] = useState("");
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+
+    // Guard: datetime-local empty → block
+    if (!startsLocal) return;
+
+    const slug = makeSlug(title);
+    const starts_at = toUTCISO(new Date(startsLocal)); // your helper already normalizes
+
+    await onSubmit({
+      title: title.trim(),
+      description: description.trim(),
+      starts_at,
+      delivery_mode: mode,
+      meeting_url: mode === "online" ? (meetingUrl.trim() || null) : undefined,
+      location: mode === "in_person" ? (location.trim() || null) : undefined,
+      slug,
+    });
+  }
 
   return (
     <form
