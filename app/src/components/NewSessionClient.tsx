@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import SessionForm from "@/src/components/SessionForm";
+import { authFetch } from "@/src/lib/authFetch";
 
 type Payload = {
   title: string;
@@ -17,11 +18,7 @@ export default function NewSessionClient() {
   const router = useRouter();
 
   async function onSubmit(payload: Payload) {
-    const res = await fetch("/api/sessions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const res = await authFetch("/api/sessions", { method: "POST", body: JSON.stringify(payload) });
 
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
