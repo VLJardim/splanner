@@ -32,3 +32,13 @@ export async function listMine(userId: string): Promise<Session[]> {
   if (error) throw error;
   return (data ?? []) as Session[];
 }
+
+export async function getSessionById(id: string): Promise<Session | null> {
+  const { data } = await supabase
+    .from("sessions")
+    .select("*")
+    .eq("id", id)
+    .single();
+    if (error) throw error;
+  return (data as Session) ?? null;
+}
