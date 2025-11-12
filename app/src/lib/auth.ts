@@ -1,21 +1,56 @@
-import { supabase } from './supabaseClient';
+// app/src/lib/auth.ts
+import { supabase } from "@/src/lib/supabaseClient";
 
-// Sign up
+// Helper: compute role from domain
+function roleFromEmail(email: string): "teacher" | "student" {
+  return email.toLowerCase().endsWith("@ek.dk") ? "teacher" : "student";
+}
+
 export async function signUp(email: string, password: string) {
-    return await supabase.auth.signUp({ email, password });
+  // Create the user (client-side)
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) throw new Error(error.message);
+
+  // If signUp returns a session (depends on email confirmation settings), great.
+  // If not, sign the user in immediately:
+  if (!data.session) {
+    const { error: inErr } = await supabase.auth.signInWithPassword({ email, password });
+    if (inErr) throw new Error(inErr.message);
+  }
+
+  // Now we have a user
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes.user?.email) throw new Error(userErr?.message || "No user after sign up");
+
+  // Compute role from domain and upsert profile
+  const role = roleFromEmail(userRes.user.email);
+  const { error: upsertErr } = await supabase
+    .from("profiles")
+    .upsert({ id: userRes.user.id, role }, { onConflict: "id" });
+  if (upsertErr) throw new Error(upsertErr.message);
+
+  return { ok: true, role };
 }
 
-// Sign in
 export async function signIn(email: string, password: string) {
-    return await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(error.message);
+
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes.user?.email) throw new Error(userErr?.message || "No user after sign in");
+
+  // Compute role from domain and upsert profile (source of truth)
+  const role = roleFromEmail(userRes.user.email);
+  const { error: upsertErr } = await supabase
+    .from("profiles")
+    .upsert({ id: userRes.user.id, role }, { onConflict: "id" });
+  if (upsertErr) throw new Error(upsertErr.message);
+
+  return { ok: true, role };
 }
 
-// Sign out
 export async function signOut() {
-    return await supabase.auth.signOut();
-}
-
-// Get current user
-export async function getCurrentUser() {
-    return await supabase.auth.getUser();
+  const { error } = await supabase.auth.signOut();
+  if (error) throw new Error(error.message);
+  return { ok: true };
 }
