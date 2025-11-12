@@ -1,5 +1,6 @@
 // Typer for data vi bruger i appen
 export type DeliveryMode = "online" | "in_person";
+export type CreateSessionData = Omit<Session, 'id' | 'created_at'>;
 
 export type Session = {
   id: string;
