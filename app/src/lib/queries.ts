@@ -6,12 +6,16 @@ export async function listPublicUpcoming(): Promise<Session[]> {
   const { data, error } = await supabase
     .from("sessions")
     .select("*")
-    .eq("is_published", true)
-    .gte("starts_at", new Date().toISOString())
+    //.eq("is_published", true)
+    //.gte("starts_at", new Date().toISOString())
     .order("starts_at", { ascending: true });
+
+    console.log('All sessions:', data);
+
   if (error) throw error;
   return (data ?? []) as Session[];
 }
+
 
 export async function getBySlug(slug: string): Promise<Session | null> {
   const { data } = await supabase
