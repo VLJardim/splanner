@@ -1,5 +1,4 @@
 // Mine sessions (dummy – udskift med listMine når auth er på plads)
-import React from "react";
 import "../../globals.css";
 
 
