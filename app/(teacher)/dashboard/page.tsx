@@ -7,6 +7,7 @@ import "../../globals.css";
 import { useEffect, useState } from "react";
 import { authFetch } from "@/src/lib/authFetch";
 import SessionCard from "@/src/components/SessionCard";
+import LogOut from "@/src/components/LogOut";
 
 type SessionRow = {
   id: string;
